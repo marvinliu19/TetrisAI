@@ -37,7 +37,7 @@ BORDERCOLOR = BLUE
 BGCOLOR = BLACK
 TEXTCOLOR = WHITE
 TEXTSHADOWCOLOR = GRAY
-COLORS      = (     BLUE,      GREEN,      RED,      YELLOW)
+COLORS = (BLUE, GREEN, RED, YELLOW)
 LIGHTCOLORS = (LIGHTBLUE, LIGHTGREEN, LIGHTRED, LIGHTYELLOW)
 assert len(COLORS) == len(LIGHTCOLORS) # each color must have light color
 
@@ -178,136 +178,138 @@ def printBoard(board):
 		print('\t'.join(map(str,row)))
 
 def runGame():
-	# setup variables for the start of the game
-	board = getBlankBoard()
-	lastMoveDownTime = time.time()
-	lastMoveSidewaysTime = time.time()
-	lastFallTime = time.time()
-	movingDown = False # note: there is no movingUp variable
-	movingLeft = False
-	movingRight = False
-	score = 0
-	level, fallFreq = calculateLevelAndFallFreq(score)
+    # setup variables for the start of the game
+    board = getBlankBoard()
+    lastMoveDownTime = time.time()
+    lastMoveSidewaysTime = time.time()
+    lastFallTime = time.time()
+    movingDown = False # note: there is no movingUp variable
+    movingLeft = False
+    movingRight = False
+    score = 0
+    level, fallFreq = calculateLevelAndFallFreq(score)
 
-	fallingPiece = getNewPiece()
-	nextPiece = getNewPiece()
+    fallingPiece = getNewPiece()
+    nextPiece = getNewPiece()
 
-	pieceCount = 1
+    while True: # game loop
+        if fallingPiece == None:
+            # No falling piece in play, so start a new piece at the top
+            fallingPiece = nextPiece
+            nextPiece = getNewPiece()
+            lastFallTime = time.time() # reset lastFallTime
 
-	while True: # game loop
-		if fallingPiece == None:
-			# No falling piece in play, so start a new piece at the top
-			fallingPiece = nextPiece
-			nextPiece = getNewPiece()
-			lastFallTime = time.time() # reset lastFallTime
+            if not isValidPosition(board, fallingPiece):
+                return # can't fit a new piece on the board, so game over
 
-			if not isValidPosition(board, fallingPiece):
-				return # can't fit a new piece on the board, so game over
+        checkForQuit()
 
-		checkForQuit()
-		for event in pygame.event.get(): # event handling loop
-			if event.type == KEYUP:
-				if (event.key == K_p):
-					# Pausing the game
-					DISPLAYSURF.fill(BGCOLOR)
-					showTextScreen('Paused') # pause until a key press
-					lastFallTime = time.time()
-					lastMoveDownTime = time.time()
-					lastMoveSidewaysTime = time.time()
-				elif (event.key == K_LEFT or event.key == K_a):
-					movingLeft = False
-				elif (event.key == K_RIGHT or event.key == K_d):
-					movingRight = False
-				elif (event.key == K_DOWN or event.key == K_s):
-					movingDown = False
+        possibleBoards = []
 
-			elif event.type == KEYDOWN:
-				# moving the piece sideways
-				if (event.key == K_LEFT or event.key == K_a) and isValidPosition(board, fallingPiece, adjX=-1):
-					fallingPiece['x'] -= 1
-					movingLeft = True
-					movingRight = False
-					lastMoveSidewaysTime = time.time()
+  #       addToBoard(board, fallingPiece)
+		# score += removeCompleteLines(board)
+		# level, fallFreq = calculateLevelAndFallFreq(score)
+		# fallingPiece = None
+		# if pieceCount >= 10:
+		# 	# test getAllMoves
+		# 	moveSET = getAllMoves(board, nextPiece)
+		# 	for b in moveSET:
+		# 		printBoard(b)
+		# 		print('\n')
 
-				elif (event.key == K_RIGHT or event.key == K_d) and isValidPosition(board, fallingPiece, adjX=1):
-					fallingPiece['x'] += 1
-					movingRight = True
-					movingLeft = False
-					lastMoveSidewaysTime = time.time()
+		# 	while True:
+		# 		i=1
+		# pieceCount +=1
 
-				# rotating the piece (if there is room to rotate)
-				elif (event.key == K_UP or event.key == K_w):
-					fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
-					if not isValidPosition(board, fallingPiece):
-						fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
-				elif (event.key == K_q): # rotate the other direction
-					fallingPiece['rotation'] = (fallingPiece['rotation'] - 1) % len(PIECES[fallingPiece['shape']])
-					if not isValidPosition(board, fallingPiece):
-						fallingPiece['rotation'] = (fallingPiece['rotation'] + 1) % len(PIECES[fallingPiece['shape']])
+        bestBoard = None
+        maxVal = -float("inf")
+        for newBoard in possibleBoards:
+            val = evaluateBoard(newBoard, -0.5, 1, -0.5, -0.5)
+            if val > maxVal:
+                maxVal =  val
+                bestBoard = newBoard
 
-				# making the piece fall faster with the down key
-				elif (event.key == K_DOWN or event.key == K_s):
-					movingDown = True
-					if isValidPosition(board, fallingPiece, adjY=1):
-						fallingPiece['y'] += 1
-					lastMoveDownTime = time.time()
+        board = bestBoard
+        score += removeCompleteLines(board)
+        level, fallFreq = calculateLevelAndFallFreq(score)
+        fallingPiece = None
 
-				# move the current piece all the way down
-				elif event.key == K_SPACE:
-					movingDown = False
-					movingLeft = False
-					movingRight = False
-					for i in range(1, BOARDHEIGHT):
-						if not isValidPosition(board, fallingPiece, adjY=i):
-							break
-					fallingPiece['y'] += i - 1
+        # drawing everything on the screen
+        DISPLAYSURF.fill(BGCOLOR)
+        drawBoard(board)
+        drawStatus(score, level)
+        drawNextPiece(nextPiece)
+        if fallingPiece != None:
+            drawPiece(fallingPiece)
 
-		# handle moving the piece because of user input
-		if (movingLeft or movingRight) and time.time() - lastMoveSidewaysTime > MOVESIDEWAYSFREQ:
-			if movingLeft and isValidPosition(board, fallingPiece, adjX=-1):
-				fallingPiece['x'] -= 1
-			elif movingRight and isValidPosition(board, fallingPiece, adjX=1):
-				fallingPiece['x'] += 1
-			lastMoveSidewaysTime = time.time()
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
 
-		if movingDown and time.time() - lastMoveDownTime > MOVEDOWNFREQ and isValidPosition(board, fallingPiece, adjY=1):
-			fallingPiece['y'] += 1
-			lastMoveDownTime = time.time()
+def evaluateBoard(board, a, b, c, d):
+    aggHeight, heights = getAggregateHeight(board)
+    completeLines = getCompleteLines(board)
+    holes = getNumHoles(board)
+    bumpiness = getBumpiness(heights)
 
-		# let the piece fall if it is time to fall
-		if time.time() - lastFallTime > fallFreq:
-			# see if the piece has landed
-			if not isValidPosition(board, fallingPiece, adjY=1):
-				# falling piece has landed, set it on the board
-				addToBoard(board, fallingPiece)
-				score += removeCompleteLines(board)
-				level, fallFreq = calculateLevelAndFallFreq(score)
-				fallingPiece = None
-				if pieceCount >= 10:
-					# test getAllMoves
-					moveSET = getAllMoves(board, nextPiece)
-					for b in moveSET:
-						printBoard(b)
-						print('\n')
+    return a * aggHeight + b * completeLines + c * holes + d * bumpiness
 
-					while True:
-						i=1
-				pieceCount +=1
-			else:
-				# piece did not land, just move the piece down
-				fallingPiece['y'] += 1
-				lastFallTime = time.time()
 
-		# drawing everything on the screen
-		DISPLAYSURF.fill(BGCOLOR)
-		drawBoard(board)
-		drawStatus(score, level)
-		drawNextPiece(nextPiece)
-		if fallingPiece != None:
-			drawPiece(fallingPiece)
+def getAggregateHeight(board):
+    aggregateHeight = 0
+    heights = []
 
-		pygame.display.update()
-		FPSCLOCK.tick(FPS)
+    for i in range(BOARDWIDTH):
+        colHeight = 0
+
+        for j in range(BOARDHEIGHT):
+            if board[i][j] != BLANK:
+                colHeight = BOARDHEIGHT - j
+                break
+
+        heights.append(colHeight)
+        aggregateHeight += colHeight
+
+    return aggregateHeight, heights
+
+def getNumHoles(board):
+    holes = 0
+
+    for i in range(BOARDWIDTH):
+        foundBlock = False
+        for j in range(BOARDHEIGHT):
+            if board[i][j] != BLANK:
+                foundBlock = True
+            elif foundBlock == True:
+                holes += 1
+
+    return holes
+
+def getBumpiness(heights):
+    bumpiness = 0
+
+    for i in range(1, BOARDWIDTH):
+        bumpiness += abs(heights[i] - heights[i-1])
+
+    return bumpiness
+
+
+def getCompleteLines(board):
+    numCompleteLines = 0
+
+    for y in range(BOARDHEIGHT):
+        if isCompleteLine(board, y):
+            numCompleteLines += 1
+
+    return numCompleteLines
+
+
+def printBoard(board):
+    for i in range(BOARDHEIGHT):
+        row = []
+        for j in range (BOARDWIDTH):
+            row.append(board[j][i])
+
+        print('\t'.join(map(str,row)))
 
 
 def makeTextObjs(text, font, color):
@@ -370,6 +372,7 @@ def calculateLevelAndFallFreq(score):
 	level = int(score / 10) + 1
 	fallFreq = 0.27 - (level * 0.02)
 	return level, fallFreq
+
 
 def getNewPiece():
 	# return a random new piece in a random rotation and color

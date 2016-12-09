@@ -6,7 +6,7 @@
 import random, time, pygame, sys, copy
 from pygame.locals import *
 
-FPS = 25
+FPS = 1000
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
 BOXSIZE = 20
@@ -44,107 +44,107 @@ assert len(COLORS) == len(LIGHTCOLORS) # each color must have light color
 TEMPLATEWIDTH = 5
 TEMPLATEHEIGHT = 5
 
-S_SHAPE_TEMPLATE = [['.....',
-					 '.....',
-					 '..OO.',
-					 '.OO..',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '..OO.',
-					 '...O.',
-					 '.....']]
+S_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', '.', '.', 'O', '.'],
+					['.', '.', '.', '.', '.']]]
 
-Z_SHAPE_TEMPLATE = [['.....',
-					 '.....',
-					 '.OO..',
-					 '..OO.',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '.OO..',
-					 '.O...',
-					 '.....']]
+Z_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', 'O', '.', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
-I_SHAPE_TEMPLATE = [['..O..',
-					 '..O..',
-					 '..O..',
-					 '..O..',
-					 '.....'],
-					['.....',
-					 '.....',
-					 'OOOO.',
-					 '.....',
-					 '.....']]
+I_SHAPE_TEMPLATE = [[['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['O', 'O', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
-O_SHAPE_TEMPLATE = [['.....',
-					 '.....',
-					 '.OO..',
-					 '.OO..',
-					 '.....']]
+O_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
-J_SHAPE_TEMPLATE = [['.....',
-					 '.O...',
-					 '.OOO.',
-					 '.....',
-					 '.....'],
-					['.....',
-					 '..OO.',
-					 '..O..',
-					 '..O..',
-					 '.....'],
-					['.....',
-					 '.....',
-					 '.OOO.',
-					 '...O.',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '..O..',
-					 '.OO..',
-					 '.....']]
+J_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', 'O', '.', '.', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', '.', '.', 'O', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
-L_SHAPE_TEMPLATE = [['.....',
-					 '...O.',
-					 '.OOO.',
-					 '.....',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '..O..',
-					 '..OO.',
-					 '.....'],
-					['.....',
-					 '.....',
-					 '.OOO.',
-					 '.O...',
-					 '.....'],
-					['.....',
-					 '.OO..',
-					 '..O..',
-					 '..O..',
-					 '.....']]
+L_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', '.', '.', 'O', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', 'O', '.', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
-T_SHAPE_TEMPLATE = [['.....',
-					 '..O..',
-					 '.OOO.',
-					 '.....',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '..OO.',
-					 '..O..',
-					 '.....'],
-					['.....',
-					 '.....',
-					 '.OOO.',
-					 '..O..',
-					 '.....'],
-					['.....',
-					 '..O..',
-					 '.OO..',
-					 '..O..',
-					 '.....']]
+T_SHAPE_TEMPLATE = [[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', 'O', 'O', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', '.', '.', '.'],
+					['.', 'O', 'O', 'O', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']],
+					[['.', '.', '.', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', 'O', 'O', '.', '.'],
+					['.', '.', 'O', '.', '.'],
+					['.', '.', '.', '.', '.']]]
 
 PIECES = {'S': S_SHAPE_TEMPLATE,
 		  'Z': Z_SHAPE_TEMPLATE,
@@ -203,25 +203,10 @@ def runGame():
 
         possibleBoards = getAllMoves(board, fallingPiece)
 
-  #       addToBoard(board, fallingPiece)
-		# score += removeCompleteLines(board)
-		# level, fallFreq = calculateLevelAndFallFreq(score)
-		# fallingPiece = None
-		# if pieceCount >= 10:
-		# 	# test getAllMoves
-		# 	moveSET = getAllMoves(board, nextPiece)
-		# 	for b in moveSET:
-		# 		printBoard(b)
-		# 		print('\n')
-
-		# 	while True:
-		# 		i=1
-		# pieceCount +=1
-
         bestBoard = None
         maxVal = -float("inf")
         for newBoard in possibleBoards:
-            val = evaluateBoard(newBoard, -1, 1, -0.5, -0.5)
+            val = evaluateBoard(newBoard, -.516, .76, -0.356, -0.1844)
             if val > maxVal:
                 maxVal =  val
                 bestBoard = newBoard
@@ -353,7 +338,6 @@ def showTextScreen(text):
 		pygame.display.update()
 		FPSCLOCK.tick()
 
-
 def checkForQuit():
 	for event in pygame.event.get(QUIT): # get all the QUIT events
 		terminate() # terminate if any QUIT events are present
@@ -407,15 +391,19 @@ def isOnBoard(x, y):
 
 def isValidPosition(board, piece, adjX=0, adjY=0):
 	# Return True if the piece is within the board and not colliding
+	t = time.time()
 	for x in range(TEMPLATEWIDTH):
 		for y in range(TEMPLATEHEIGHT):
 			isAboveBoard = y + piece['y'] + adjY < 0
 			if isAboveBoard or PIECES[piece['shape']][piece['rotation']][y][x] == BLANK:
 				continue
 			if not isOnBoard(x + piece['x'] + adjX, y + piece['y'] + adjY):
+				print 'a: ' + str(t-time.time())
 				return False
 			if board[x + piece['x'] + adjX][y + piece['y'] + adjY] != BLANK:
+				print 'b: ' + str(t-time.time())
 				return False
+	print 'c: ' + str(t-time.time())
 	return True
 
 def isInRange(piece, adjX=0, adjY=0):
@@ -438,32 +426,37 @@ def getAllMoves(board, piece):
 		piece['y'] += i-1
 
 	boardList = []
-
+	
 	numRotations = len(PIECES[piece['shape']])
-	currRotPiece = copy.copy(piece)
-
 	for rot in range(numRotations):
-		currRotPiece['rotation'] = (currRotPiece['rotation'] + 1) % len(PIECES[currRotPiece['shape']])
+		piece['rotation'] = (piece['rotation'] + 1) % len(PIECES[piece['shape']])
 
 		xshift = 0
 		while True:
-			if not isInRange(currRotPiece, adjX = xshift) and xshift > 0:
+			if not isInRange(piece, adjX = xshift) and xshift > 0:
 				break
-			currXShiftPiece = copy.deepcopy(currRotPiece)
+			currXShiftPiece = copy.deepcopy(piece)
 			currXShiftPiece['x'] += xshift
+			# t = time.time()
+			# print 'Rot#' + str(rot) + ': ' + str(time.time()-t)
 			if isValidPosition(board, currXShiftPiece):
+				# print 'xshift#' + str(xshift) + ': ' + str(time.time()-t)
 				dropPiece(board, currXShiftPiece)
-
+				# print 'xshift#' + str(xshift) + ': ' + str(time.time()-t)
 				currBoard = copy.deepcopy(board)
+				# print 'xshift#' + str(xshift) + ': ' + str(time.time()-t)
 				if addToBoard(currBoard, currXShiftPiece):
+					# print 'xshift#' + str(xshift) + ': ' + str(time.time()-t)
 					boardList.append(currBoard)
+					# print 'xshift#' + str(xshift) + ': ' + str(time.time()-t)
 			# left first
+			# print 'Rot#' + str(rot) + ': ' + str(time.time()-t)
 			if xshift <= 0:
 				xshift -= 1
 			else:
 				xshift += 1
 
-			if not isInRange(currRotPiece, adjX = xshift) and xshift <= 0:
+			if not isInRange(piece, adjX = xshift) and xshift <= 0:
 				xshift = 1
 
 	return boardList

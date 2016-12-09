@@ -1,8 +1,3 @@
-# Tetromino (a Tetris clone)
-# By Al Sweigart al@inventwithpython.com
-# http://inventwithpython.com/pygame
-# Released under a "Simplified BSD" license
-
 import random, time, pygame, sys
 from pygame.locals import *
 
@@ -37,7 +32,7 @@ BORDERCOLOR = BLUE
 BGCOLOR = BLACK
 TEXTCOLOR = WHITE
 TEXTSHADOWCOLOR = GRAY
-COLORS      = (     BLUE,      GREEN,      RED,      YELLOW)
+COLORS = (BLUE, GREEN, RED, YELLOW)
 LIGHTCOLORS = (LIGHTBLUE, LIGHTGREEN, LIGHTRED, LIGHTYELLOW)
 assert len(COLORS) == len(LIGHTCOLORS) # each color must have light color
 
@@ -271,6 +266,15 @@ def runGame():
             if not isValidPosition(board, fallingPiece, adjY=1):
                 # falling piece has landed, set it on the board
                 addToBoard(board, fallingPiece)
+
+                # display algorithm metrics before clearing the board
+                aggregateHeight, heights = getAggregateHeight(board)
+                print "Height         : %i" % (aggregateHeight)
+                print "Holes          : %i" % (getNumHoles(board))
+                print "Bumpiness      : %i" % (getBumpiness(heights))
+                print "Complete Lines : %i" % (getCompleteLines(board))
+                print ""
+
                 score += removeCompleteLines(board)
                 level, fallFreq = calculateLevelAndFallFreq(score)
                 fallingPiece = None
@@ -290,6 +294,62 @@ def runGame():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def getAggregateHeight(board):
+    aggregateHeight = 0
+    heights = []
+
+    for i in range(BOARDWIDTH):
+        colHeight = 0
+
+        for j in range(BOARDHEIGHT):
+            if board[i][j] != BLANK:
+                colHeight = BOARDHEIGHT - j
+                break
+
+        heights.append(colHeight)
+        aggregateHeight += colHeight
+
+    return aggregateHeight, heights
+
+def getNumHoles(board):
+    holes = 0
+
+    for i in range(BOARDWIDTH):
+        foundBlock = False
+        for j in range(BOARDHEIGHT):
+            if board[i][j] != BLANK:
+                foundBlock = True
+            elif foundBlock == True:
+                holes += 1
+
+    return holes
+
+def getBumpiness(heights):
+    bumpiness = 0
+
+    for i in range(1, BOARDWIDTH):
+        bumpiness += abs(heights[i] - heights[i-1])
+
+    return bumpiness
+
+
+def getCompleteLines(board):
+    numCompleteLines = 0
+
+    for y in range(BOARDHEIGHT):
+        if isCompleteLine(board, y):
+            numCompleteLines += 1
+
+    return numCompleteLines
+
+
+def printBoard(board):
+    for i in range(BOARDHEIGHT):
+        row = []
+        for j in range (BOARDWIDTH):
+            row.append(board[j][i])
+
+        print('\t'.join(map(str,row)))
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)
@@ -351,6 +411,7 @@ def calculateLevelAndFallFreq(score):
     level = int(score / 10) + 1
     fallFreq = 0.27 - (level * 0.02)
     return level, fallFreq
+
 
 def getNewPiece():
     # return a random new piece in a random rotation and color

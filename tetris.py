@@ -197,14 +197,11 @@ def runGame():
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
             nextPiece = getNewPiece()
-            lastFallTime = time.time() # reset lastFallTime
 
             if not isValidPosition(board, fallingPiece):
                 return # can't fit a new piece on the board, so game over
 
-        checkForQuit()
-
-        possibleBoards = []
+        possibleBoards = getAllMoves(board, fallingPiece)
 
   #       addToBoard(board, fallingPiece)
 		# score += removeCompleteLines(board)
@@ -224,7 +221,7 @@ def runGame():
         bestBoard = None
         maxVal = -float("inf")
         for newBoard in possibleBoards:
-            val = evaluateBoard(newBoard, -0.5, 1, -0.5, -0.5)
+            val = evaluateBoard(newBoard, -1, 1, -0.5, -0.5)
             if val > maxVal:
                 maxVal =  val
                 bestBoard = newBoard

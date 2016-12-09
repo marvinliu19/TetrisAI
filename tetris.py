@@ -323,7 +323,7 @@ def showTextScreen(text):
 
 	while checkForKeyPress() == None:
 		pygame.display.update()
-		# FPSCLOCK.tick()
+		FPSCLOCK.tick()
 
 def checkForQuit():
 	for event in pygame.event.get(QUIT): # get all the QUIT events
@@ -413,7 +413,7 @@ def getAllMoves(board, piece):
 		piece['y'] += i-1
 
 	boardList = []
-	
+
 	numRotations = len(PIECES[piece['shape']])
 	for rot in range(numRotations):
 		piece['rotation'] = (piece['rotation'] + 1) % len(PIECES[piece['shape']])

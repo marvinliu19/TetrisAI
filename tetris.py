@@ -294,6 +294,15 @@ def runGame():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
+def evaluateBoard(board, a, b, c, d):
+    aggHeight, heights = getAggregateHeight(board)
+    completeLines = getCompleteLines(board)
+    holes = getNumHoles(board)
+    bumpiness = getBumpiness(heights)
+
+    return a * aggHeight + b * completeLines + c * holes + d * bumpiness
+
+
 def getAggregateHeight(board):
     aggregateHeight = 0
     heights = []
@@ -350,6 +359,7 @@ def printBoard(board):
             row.append(board[j][i])
 
         print('\t'.join(map(str,row)))
+
 
 def makeTextObjs(text, font, color):
     surf = font.render(text, True, color)

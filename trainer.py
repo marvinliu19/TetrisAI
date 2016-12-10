@@ -142,8 +142,11 @@ def main():
         d = random.random() * 2 - 1
         population.append(normalize([a,b,c,d]))
 
+    # each round is a single generation
     for rounds in range(0, ROUNDS):
         print "Round #%i starting..." % (rounds + 1)
+
+        # evaluate the fitness of each member in the population
         populationWithScore = []
         pCount = 0
         for p in population:
@@ -153,11 +156,12 @@ def main():
                 gameScore = pool.apply(runGame, p)
                 score += gameScore
 
-            print "Round #%i Vector #%i: (%.3f, %.3f, %.3f, %.3f)  Score: %i" % (rounds + 1, pCount+1, p[0], p[1], p[2], p[3], score)
+            print "Round #%i Vector #%i: (%.6f, %.6f, %.6f, %.6f)  Score: %i" % (rounds + 1, pCount+1, p[0], p[1], p[2], p[3], score)
 
             pCount += 1
             populationWithScore.append((p, score))
 
+        # use tournament selection and crossover/mutuation to get the next generation
         newPop = []
         while len(newPop) < REPLACESIZE:
             sample = random.sample(populationWithScore, SAMPLESIZE)
@@ -174,12 +178,14 @@ def main():
             newPop.append(mutate(normalize(newP1)))
             newPop.append(mutate(normalize(newP2)))
 
+        # replace the weakest of the old generation with the new generation
         populationWithScore.sort(key = lambda p: p[1])
         populationWithScore = populationWithScore[REPLACESIZE:]
 
         for old in populationWithScore:
             newPop.append(old[0])
 
+        #update the current population
         population = newPop
 
 
@@ -200,12 +206,14 @@ def mutate(p):
         p = normalize(p)
     return p
 
+
 def printBoard(board):
 	for i in range(BOARDHEIGHT):
 		row = []
 		for j in range (BOARDWIDTH):
 			row.append(board[j][i])
 		print('\t'.join(map(str,row)))
+
 
 def runGame(a, b, c, d):
     # setup variables for the start of the game
@@ -245,6 +253,7 @@ def runGame(a, b, c, d):
         score += removeCompleteLines(board)
         level, fallFreq = calculateLevelAndFallFreq(score)
         fallingPiece = None
+
 
 def evaluateBoard(board, a, b, c, d):
     aggHeight, heights = getAggregateHeight(board)

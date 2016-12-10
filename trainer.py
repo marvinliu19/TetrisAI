@@ -3,7 +3,15 @@
 # http://inventwithpython.com/pygame
 # Released under a "Simplified BSD" license
 
-import random, time, sys, copy
+import random, time, sys, copy, math
+from multiprocessing import Pool
+
+POPSIZE = 100
+SAMPLESIZE = 10
+REPLACESIZE = 30
+MAXPIECES = 400
+GAMESPERVECTOR = 10
+ROUNDS = 10
 
 BOARDWIDTH = 10
 BOARDHEIGHT = 20
@@ -124,8 +132,73 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 
 
 def main():
-	while True: # game loop
-		runGame()
+    pool = Pool(processes=4)
+    # randomly create initial population
+    population = []
+    for i in range(0, POPSIZE):
+        a = random.random() * 2 - 1
+        b = random.random() * 2 - 1
+        c = random.random() * 2 - 1
+        d = random.random() * 2 - 1
+        population.append(normalize([a,b,c,d]))
+
+    for rounds in range(0, ROUNDS):
+        print "Round #%i starting..." % (rounds + 1)
+        populationWithScore = []
+        pCount = 0
+        for p in population:
+            score = 0
+
+            for i in range(0, GAMESPERVECTOR):
+                gameScore = pool.apply(runGame, p)
+                score += gameScore
+
+            print "Round #%i Vector #%i: (%.3f, %.3f, %.3f, %.3f)  Score: %i" % (rounds + 1, pCount+1, p[0], p[1], p[2], p[3], score)
+
+            pCount += 1
+            populationWithScore.append((p, score))
+
+        newPop = []
+        while len(newPop) < REPLACESIZE:
+            sample = random.sample(populationWithScore, SAMPLESIZE)
+            sample.sort(key=lambda p: p[1], reverse=True)
+
+            p1 = sample[0][0]
+            p2 = sample[1][0]
+
+            splitPoint = random.randint(1,3)
+
+            newP1 = p1[0:splitPoint] + p2[splitPoint:]
+            newP2 = p2[0:splitPoint] + p1[splitPoint:]
+
+            newPop.append(mutate(normalize(newP1)))
+            newPop.append(mutate(normalize(newP2)))
+
+        populationWithScore.sort(key = lambda p: p[1])
+        populationWithScore = populationWithScore[REPLACESIZE:]
+
+        for old in populationWithScore:
+            newPop.append(old[0])
+
+        population = newPop
+
+
+def normalize(p):
+    tot = 0
+    for x in p:
+        tot += x**2
+    tot = math.sqrt(tot)
+    if tot != 0:
+        p = map(lambda x: x/tot, p)
+    return p
+
+
+def mutate(p):
+    if random.randint(1,100) <= 5:
+        i = random.randint(0,3)
+        p[i] += (random.random() * 2 - 1)/5
+        p = normalize(p)
+    return p
 
 def printBoard(board):
 	for i in range(BOARDHEIGHT):
@@ -134,7 +207,7 @@ def printBoard(board):
 			row.append(board[j][i])
 		print('\t'.join(map(str,row)))
 
-def runGame():
+def runGame(a, b, c, d):
     # setup variables for the start of the game
     board = getBlankBoard()
 
@@ -144,27 +217,31 @@ def runGame():
     fallingPiece = getNewPiece()
     nextPiece = getNewPiece()
 
+    pieces = 0
+
     while True: # game loop
         if fallingPiece == None:
             # No falling piece in play, so start a new piece at the top
             fallingPiece = nextPiece
             nextPiece = getNewPiece()
+            pieces += 1
 
-            if not isValidPosition(board, fallingPiece):
-                print "Score %i" % (score)
-                return # can't fit a new piece on the board, so game over
+            if not isValidPosition(board, fallingPiece) or pieces == MAXPIECES:
+                return score
 
         possibleBoards = getAllMoves(board, fallingPiece)
 
         bestBoard = None
         maxVal = -float("inf")
         for newBoard in possibleBoards:
-            val = evaluateBoard(newBoard, -1, 1, -0.5, -0.5)
+            val = evaluateBoard(newBoard, a, b, c, d)
             if val > maxVal:
                 maxVal =  val
                 bestBoard = newBoard
 
-        board = bestBoard
+        if bestBoard != None:
+            board = bestBoard
+
         score += removeCompleteLines(board)
         level, fallFreq = calculateLevelAndFallFreq(score)
         fallingPiece = None

@@ -131,6 +131,13 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 		  'T': T_SHAPE_TEMPLATE}
 
 def evaluate(individual):
+    score = 0
+    for i in range(0, 10):
+        score += runGame(individual)
+
+    return float(score)/10,
+
+def runGame(individual):
     # setup variables for the start of the game
     board = getBlankBoard()
 
@@ -150,7 +157,7 @@ def evaluate(individual):
             pieces += 1
 
             if not isValidPosition(board, fallingPiece) or pieces == MAXPIECES:
-                return score,
+                return score
 
         possibleBoards = getAllMoves(board, fallingPiece)
 

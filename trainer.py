@@ -4,18 +4,18 @@
 # Released under a "Simplified BSD" license
 
 import random, time, sys, copy, math
-from multiprocessing import Pool
+from deap import tools, base, creator, algorithms
+import multiprocessing
 
-POPSIZE = 100
-SAMPLESIZE = 10
-REPLACESIZE = 30
-MAXPIECES = 400
-GAMESPERVECTOR = 10
-ROUNDS = 10
+pool = multiprocessing.Pool()
+
+creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMax)
 
 BOARDWIDTH = 10
 BOARDHEIGHT = 20
 BLANK = '.'
+MAXPIECES = 5000
 
 TEMPLATEWIDTH = 5
 TEMPLATEHEIGHT = 5
@@ -130,92 +130,7 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 		  'O': O_SHAPE_TEMPLATE,
 		  'T': T_SHAPE_TEMPLATE}
 
-
-def main():
-    pool = Pool(processes=4)
-    # randomly create initial population
-    population = []
-    for i in range(0, POPSIZE):
-        a = random.random() * 2 - 1
-        b = random.random() * 2 - 1
-        c = random.random() * 2 - 1
-        d = random.random() * 2 - 1
-        population.append(normalize([a,b,c,d]))
-
-    # each round is a single generation
-    for rounds in range(0, ROUNDS):
-        print "Round #%i starting..." % (rounds + 1)
-
-        # evaluate the fitness of each member in the population
-        populationWithScore = []
-        pCount = 0
-        for p in population:
-            score = 0
-
-            for i in range(0, GAMESPERVECTOR):
-                gameScore = pool.apply(runGame, p)
-                score += gameScore
-
-            print "Round #%i Vector #%i: (%.6f, %.6f, %.6f, %.6f)  Score: %i" % (rounds + 1, pCount+1, p[0], p[1], p[2], p[3], score)
-
-            pCount += 1
-            populationWithScore.append((p, score))
-
-        # use tournament selection and crossover/mutuation to get the next generation
-        newPop = []
-        while len(newPop) < REPLACESIZE:
-            sample = random.sample(populationWithScore, SAMPLESIZE)
-            sample.sort(key=lambda p: p[1], reverse=True)
-
-            p1 = sample[0][0]
-            p2 = sample[1][0]
-
-            splitPoint = random.randint(1,3)
-
-            newP1 = p1[0:splitPoint] + p2[splitPoint:]
-            newP2 = p2[0:splitPoint] + p1[splitPoint:]
-
-            newPop.append(mutate(normalize(newP1)))
-            newPop.append(mutate(normalize(newP2)))
-
-        # replace the weakest of the old generation with the new generation
-        populationWithScore.sort(key = lambda p: p[1])
-        populationWithScore = populationWithScore[REPLACESIZE:]
-
-        for old in populationWithScore:
-            newPop.append(old[0])
-
-        #update the current population
-        population = newPop
-
-
-def normalize(p):
-    tot = 0
-    for x in p:
-        tot += x**2
-    tot = math.sqrt(tot)
-    if tot != 0:
-        p = map(lambda x: x/tot, p)
-    return p
-
-
-def mutate(p):
-    if random.randint(1,100) <= 5:
-        i = random.randint(0,3)
-        p[i] += (random.random() * 2 - 1)/5
-        p = normalize(p)
-    return p
-
-
-def printBoard(board):
-	for i in range(BOARDHEIGHT):
-		row = []
-		for j in range (BOARDWIDTH):
-			row.append(board[j][i])
-		print('\t'.join(map(str,row)))
-
-
-def runGame(a, b, c, d):
+def evaluate(individual):
     # setup variables for the start of the game
     board = getBlankBoard()
 
@@ -235,14 +150,14 @@ def runGame(a, b, c, d):
             pieces += 1
 
             if not isValidPosition(board, fallingPiece) or pieces == MAXPIECES:
-                return score
+                return score,
 
         possibleBoards = getAllMoves(board, fallingPiece)
 
         bestBoard = None
         maxVal = -float("inf")
         for newBoard in possibleBoards:
-            val = evaluateBoard(newBoard, a, b, c, d)
+            val = evaluateBoard(newBoard, individual[0], individual[1], individual[2], individual[3])
             if val > maxVal:
                 maxVal =  val
                 bestBoard = newBoard
@@ -253,6 +168,61 @@ def runGame(a, b, c, d):
         score += removeCompleteLines(board)
         level, fallFreq = calculateLevelAndFallFreq(score)
         fallingPiece = None
+
+def randomInRange():
+    return 2*random.random() - 1
+
+toolbox = base.Toolbox()
+toolbox.register("map", pool.map)
+toolbox.register("attr_float", randomInRange)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=4)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual, n=100)
+toolbox.register("evaluate", evaluate)
+toolbox.register("mate", tools.cxOnePoint)
+toolbox.register("mutate", tools.mutGaussian, mu = 0, sigma = 0.5, indpb = 0.2)
+toolbox.register("select", tools.selTournament, tournsize=10)
+
+def main():
+
+    pop = toolbox.population()
+
+    CXPB, MUTPB, NGEN = 0.5, 0.2, 40
+
+    print "Evaluating initial population"
+    # Evaluate the entire population
+    fitnesses = map(toolbox.evaluate, pop)
+    for ind, fit in zip(pop, fitnesses):
+        ind.fitness.values = fit
+
+    for g in range(NGEN):
+        print "Generation %i" % (g + 1)
+        print "Generating offspring..."
+        offspring = algorithms.varOr(pop, toolbox, 100, CXPB, MUTPB)
+
+        print "Evaluating offspring..."
+        fitnesses = map(toolbox.evaluate, offspring)
+        for ind, fit in zip(offspring, fitnesses):
+            ind.fitness.values = fit
+
+        pop = toolbox.select(offspring + pop, k = 100)
+        print pop
+
+        fits = [ind.fitness.values[0] for ind in pop]
+        print fits
+
+        length = len(pop)
+        mean = sum(fits) / length
+        sum2 = sum(x*x for x in fits)
+        std = abs(sum2 / length - mean**2)**0.5
+
+        print ""
+        print("Min %s" % min(fits))
+        print("Max %s" % max(fits))
+        print("Avg %s" % mean)
+        print("Std %s" % std)
+
+
+    return pop
 
 
 def evaluateBoard(board, a, b, c, d):

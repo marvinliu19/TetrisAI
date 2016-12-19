@@ -6,6 +6,12 @@
 import random, time, pygame, sys, copy
 from pygame.locals import *
 
+# WEIGHT VECTOR (only parameters that should change)
+ALPHA = -.516
+BETA = .76
+GAMMA = -.356
+DELTA = -.1844
+
 FPS = 1000
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
@@ -158,7 +164,7 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 def main():
 	global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
 	pygame.init()
-	# FPSCLOCK = pygame.time.Clock()
+
 	DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 	BASICFONT = pygame.font.Font('freesansbold.ttf', 18)
 	BIGFONT = pygame.font.Font('freesansbold.ttf', 100)
@@ -170,6 +176,7 @@ def main():
 		showTextScreen('Game Over')
 
 
+# Helper method for debugging
 def printBoard(board):
 	for i in range(BOARDHEIGHT):
 		row = []
@@ -177,6 +184,7 @@ def printBoard(board):
 			row.append(board[j][i])
 		print('\t'.join(map(str,row)))
 
+# Main game loop function
 def runGame():
     # setup variables for the start of the game
     board = getBlankBoard()
@@ -196,12 +204,14 @@ def runGame():
             if not isValidPosition(board, fallingPiece):
                 return # can't fit a new piece on the board, so game over
 
+        # Get all the moves available
         possibleBoards = getAllMoves(board, fallingPiece)
 
+        # Find the best move by using evaluateBoard
         bestBoard = None
         maxVal = -float("inf")
         for newBoard in possibleBoards:
-            val = evaluateBoard(newBoard, -.516, .76, -0.356, -0.1844)
+            val = evaluateBoard(newBoard, ALPHA, BETA, GAMMA, DELTA)
             if val > maxVal:
                 maxVal =  val
                 bestBoard = newBoard
@@ -221,19 +231,21 @@ def runGame():
 
         pygame.display.update()
         time.sleep(1/FPS)
-        # FPSCLOCK.tick(FPS)
 
+
+# Returns a score for the board based on the 4 heuristics
 def evaluateBoard(board, a, b, c, d):
-    aggHeight, heights = getAggregateHeight(board)
+    totHeight, heights = getTotalHeight(board)
     completeLines = getCompleteLines(board)
     holes = getNumHoles(board)
-    bumpiness = getBumpiness(heights)
+    heightVar = getHeightVar(heights)
 
-    return a * aggHeight + b * completeLines + c * holes + d * bumpiness
+    return a * totHeight + b * completeLines + c * holes + d * heightVar
 
 
-def getAggregateHeight(board):
-    aggregateHeight = 0
+# Calculates the total height heuristic
+def getTotalHeight(board):
+    totalHeight = 0
     heights = []
 
     for i in range(BOARDWIDTH):
@@ -245,10 +257,12 @@ def getAggregateHeight(board):
                 break
 
         heights.append(colHeight)
-        aggregateHeight += colHeight
+        totalHeight += colHeight
 
-    return aggregateHeight, heights
+    return totalHeight, heights
 
+
+# Calculates the total number of holes heuristic
 def getNumHoles(board):
     holes = 0
 
@@ -262,15 +276,18 @@ def getNumHoles(board):
 
     return holes
 
-def getBumpiness(heights):
-    bumpiness = 0
+
+# Calculates the height variance heuristic
+def getHeightVar(heights):
+    heightVar = 0
 
     for i in range(1, BOARDWIDTH):
-        bumpiness += abs(heights[i] - heights[i-1])
+        heightVar += abs(heights[i] - heights[i-1])
 
-    return bumpiness
+    return heightVar
 
 
+#Calculates the number of complete lines heuristic
 def getCompleteLines(board):
     numCompleteLines = 0
 

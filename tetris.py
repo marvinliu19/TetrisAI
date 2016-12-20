@@ -162,7 +162,7 @@ PIECES = {'S': S_SHAPE_TEMPLATE,
 
 
 def main():
-	global FPSCLOCK, DISPLAYSURF, BASICFONT, BIGFONT
+	global DISPLAYSURF, BASICFONT, BIGFONT
 	pygame.init()
 
 	DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
@@ -340,7 +340,6 @@ def showTextScreen(text):
 
 	while checkForKeyPress() == None:
 		pygame.display.update()
-		FPSCLOCK.tick()
 
 def checkForQuit():
 	for event in pygame.event.get(QUIT): # get all the QUIT events

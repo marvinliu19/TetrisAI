@@ -1,5 +1,5 @@
 Setup
-  - Our implementation requires pygame and DEAP to be installed
+  - Our implementation requires pygame and DEAP to be installed (DEAP ONLY for trainer.py)
 
   - Pygame (http://www.pygame.org/wiki/GettingStarted)
     - Download from link OR
